@@ -1,148 +1,119 @@
-let n = 0;
-while (isNaN(n) || n < 1) {
-    n = +prompt("Введите длину массива");
+document.addEventListener('DOMContentLoaded', () => {
+    const matrixSize = getUserInput('Введите число, которое определит длину массива:', 10);
+    const topRightElementValue = getUserInput('Введите число для элемента массива вверху справа:', 7);
+    const targetRow = getUserInput('Введите номер строки для подсчета ее суммы (начиная с 0):', 3);
+    const targetColumn = getUserInput('Введите номер столбца для подсчета его суммы (начиная с 0):', 5);
+
+    const matrix = generateMatrix(matrixSize, topRightElementValue);
+    renderMatrix(matrix);
+
+    const calculations = [
+        { description: 'Сумма главной диагонали', func: calculateMainDiagonalSum },
+        { description: 'Сумма побочной диагонали', func: calculateSecondaryDiagonalSum },
+        { description: 'Сумма верхней правой половины матрицы без главной диагонали', func: calculateMatrixHalfSum, args: [false, true, true] },
+        { description: 'Сумма верхней правой половины матрицы с главной диагональю', func: calculateMatrixHalfSum, args: [true, true, true] },
+        { description: 'Сумма нижней левой половины матрицы без главной диагонали', func: calculateMatrixHalfSum, args: [false, false, true] },
+        { description: 'Сумма нижней левой половины матрицы с главной диагональю', func: calculateMatrixHalfSum, args: [true, false, true] },
+        { description: 'Сумма верхней левой половины матрицы без побочной диагонали', func: calculateMatrixHalfSum, args: [false, true, false] },
+        { description: 'Сумма верхней левой половины матрицы с побочной диагональю', func: calculateMatrixHalfSum, args: [true, true, false] },
+        { description: 'Сумма нижней правой половины матрицы без побочной диагонали', func: calculateMatrixHalfSum, args: [false, false, false] },
+        { description: `Сумма всех элементов строки ${targetRow}`, func: calculateRowSum, args: [targetRow] },
+        { description: `Сумма всех элементов столбца ${targetColumn}`, func: calculateColumnSum, args: [targetColumn] }
+    ];
+
+    calculations.forEach(({ description, func, args = [] }) => {
+        renderCalculationResult(description, func(matrix, ...args));
+    });
+});
+
+function getUserInput(promptText, defaultValue) {
+    return parseInt(prompt(promptText, defaultValue));
 }
 
-let arr = [];
-
-for (let i = 0; i < n; i++) {
-    arr[i] = [];
-    for (let j = 0; j < n; j++) {
-        arr[i][j] = Math.round(Math.random() * 9);
-    }
+function generateMatrix(size, topRightElementValue) {
+    const matrix = Array.from({ length: size }, () => Array.from({ length: size }, () => Math.floor(Math.random() * 10)));
+    matrix[0][size - 1] = topRightElementValue;
+    return matrix;
 }
 
-const topLeftElement = arr[0][n - 1]; // Верхний правый угловой элемент квадрата
-const rowNumber = parseInt(prompt("Введите номер строки для подсчета суммы (от 1 до " + n + ")"), 10) - 1;
-const columnNumber = parseInt(prompt("Введите номер столбца для подсчета суммы (от 1 до " + n + ")"), 10) - 1;
-
-let mainDiagonalSum = 0;
-for (let i = 0; i < n; i++) {
-    mainDiagonalSum += arr[i][i];
+function renderMatrix(matrix) {
+    document.write('<h2>Матрица:</h2>');
+    document.write(generateHTMLTable(matrix));
 }
 
-
-let secondaryDiagonalSum = 0;
-for (let i = 0; i < n; i++) {
-    secondaryDiagonalSum += arr[i][n - i - 1];
-}
-
-
-let upperRightHalfWithoutMainDiag = 0;
-for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-        if (i < j && j !== n - 1) {
-            upperRightHalfWithoutMainDiag += arr[i][j];
+function generateHTMLTable(matrix, highlightedCells = {}, highlightColor = 'lightgreen') {
+    let html = '<table>';
+    for (let i = 0; i < matrix.length; i++) {
+        html += '<tr>';
+        for (let j = 0; j < matrix[i].length; j++) {
+            const cellColor = highlightedCells[i] && highlightedCells[i].includes(j) ? highlightColor : '';
+            html += `<td style="background-color: ${cellColor}">${matrix[i][j]}</td>`;
         }
+        html += '</tr>';
     }
+    html += '</table>';
+    return html;
 }
 
-let upperRightHalfWithMainDiag = 0;
-for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-        if (i <= j && j !== n - 1) {
-            upperRightHalfWithMainDiag += arr[i][j];
-        }
-    }
+function renderCalculationResult(description, result) {
+    document.write(`<h3>${description}: <span>${result}</span></h3>`);
 }
 
-let lowerLeftHalfWithoutMainDiag = 0;
-for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-        if (i > j && i !== n - 1) {
-            lowerLeftHalfWithoutMainDiag += arr[i][j];
-        }
-    }
+function calculateMainDiagonalSum(matrix) {
+    let sum = 0;
+    const highlightedCells = {};
+    matrix.forEach((row, i) => {
+        sum += row[i];
+        highlightedCells[i] = [i];
+    });
+    document.write(generateHTMLTable(matrix, highlightedCells, 'green'));
+    return sum;
 }
 
-let lowerLeftHalfWithMainDiag = 0;
-for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-        if (i >= j && i !== n - 1) {
-            lowerLeftHalfWithMainDiag += arr[i][j];
-        }
-    }
+function calculateSecondaryDiagonalSum(matrix) {
+    let sum = 0;
+    const highlightedCells = {};
+    matrix.forEach((row, i) => {
+        const colIndex = row.length - 1 - i;
+        sum += row[colIndex];
+        highlightedCells[i] = [colIndex];
+    });
+    document.write(generateHTMLTable(matrix, highlightedCells, 'blue'));
+    return sum;
 }
 
-let upperLeftHalfWithoutSecondaryDiag = 0;
-for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-        if (i + j < n - 1 && i !== n - 1) {
-            upperLeftHalfWithoutSecondaryDiag += arr[i][j];
-        }
-    }
+function calculateMatrixHalfSum(matrix, includeDiagonal, isUpperHalf, isMainDiagonal) {
+    let sum = 0;
+    const highlightedCells = {};
+    matrix.forEach((row, i) => {
+        row.forEach((value, j) => {
+            const condition = isMainDiagonal ? (isUpperHalf ? j > i : j < i) : (isUpperHalf ? j < row.length - 1 - i : j > row.length - 1 - i);
+            const include = condition || (includeDiagonal && ((isMainDiagonal && j === i) || (!isMainDiagonal && j === row.length - 1 - i)));
+            if (include) {
+                sum += value;
+                highlightedCells[i] = highlightedCells[i] || [];
+                highlightedCells[i].push(j);
+            }
+        });
+    });
+    document.write(generateHTMLTable(matrix, highlightedCells, 'yellow'));
+    return sum;
 }
 
-let upperLeftHalfWithSecondaryDiag = 0;
-for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-        if (i + j <= n - 1 && i !== n - 1) {
-            upperLeftHalfWithSecondaryDiag += arr[i][j];
-        }
-    }
+function calculateRowSum(matrix, row) {
+    const sum = matrix[row].reduce((acc, item) => acc + item, 0);
+    const highlightedCells = { [row]: Array.from({ length: matrix[row].length }, (_, i) => i) };
+    document.write(generateHTMLTable(matrix, highlightedCells, 'brown'));
+    return sum;
 }
 
-let lowerRightHalfWithoutSecondaryDiag = 0;
-for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-        if (i + j > n - 1 && j !== n - 1) {
-            lowerRightHalfWithoutSecondaryDiag += arr[i][j];
-        }
-    }
+function calculateColumnSum(matrix, column) {
+    let sum = 0;
+    const highlightedCells = {};
+    matrix.forEach((row, i) => {
+        sum += row[column];
+        highlightedCells[i] = [column];
+    });
+    document.write(generateHTMLTable(matrix, highlightedCells, 'grey'));
+    return sum;
 }
-
-let lowerRightHalfWithSecondaryDiag = 0;
-for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-        if (i + j >= n - 1 && j !== n - 1) {
-            lowerRightHalfWithSecondaryDiag += arr[i][j];
-        }
-    }
-}
-
-// Сумма строки
-let rowSum = 0;
-for (let j = 0; j < n; j++) {
-    rowSum += arr[rowNumber][j];
-}
-
-// Сумма столбца
-let columnSum = 0;
-for (let i = 0; i < n; i++) {
-    columnSum += arr[i][columnNumber];
-}
-
-let matrixContainer = document.getElementById('matrixContainer');
-matrixContainer.innerHTML = '';
-for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-        let div = document.createElement('div');
-        div.className = 'cell';
-        div.textContent = arr[i][j];
-        if ((i === 0 && j === n - 1) || i === rowNumber || j === columnNumber) {
-            div.classList.add('highlight');
-        }
-        matrixContainer.appendChild(div);
-    }
-    let br = document.createElement('br');
-    matrixContainer.appendChild(br);
-}
-
-// Вывод результатов
-let resultsContainer = document.getElementById('results');
-resultsContainer.innerHTML = `
-    <ul>
-        <li>Сумма главной диагонали: ${mainDiagonalSum}</li>
-        <li>Сумма побочной диагонали: ${secondaryDiagonalSum}</li>
-        <li>Сумма половины матрицы без главной диагонали сверху справа: ${upperRightHalfWithoutMainDiag}</li>
-        <li>Сумма половины матрицы с главной диагональю сверху справа: ${upperRightHalfWithMainDiag}</li>
-        <li>Сумма половины матрицы без главной диагонали снизу слева: ${lowerLeftHalfWithoutMainDiag}</li>
-        <li>Сумма половины матрицы с главной диагональю снизу слева: ${lowerLeftHalfWithMainDiag}</li>
-        <li>Сумма половины матрицы без побочной диагонали сверху слева: ${upperLeftHalfWithoutSecondaryDiag}</li>
-        <li>Сумма половины матрицы с побочной диагональю сверху слева: ${upperLeftHalfWithSecondaryDiag}</li>
-        <li>Сумма половины матрицы без побочной диагонали снизу справа: ${lowerRightHalfWithoutSecondaryDiag}</li>
-        <li>Сумма половины матрицы с побочной диагональю снизу справа: ${lowerRightHalfWithSecondaryDiag}</li>
-        <li>Сумма строки ${rowNumber + 1}: ${rowSum}</li>
-        <li>Сумма столбца ${columnNumber + 1}: ${columnSum}</li>
-    </ul>
-`;
